@@ -6,6 +6,7 @@ Vue.use(Router)
 import { createListView } from '../views/CreateListView'
 import ItemView from '../views/ItemView.vue'
 import UserView from '../views/UserView.vue'
+import MenuView from '../views/MenuView.vue'
 
 export default new Router({
   mode: 'history',
@@ -18,6 +19,8 @@ export default new Router({
     { path: '/job/:page(\\d+)?', component: createListView('job') },
     { path: '/item/:id(\\d+)', component: ItemView },
     { path: '/user/:id', component: UserView },
-    { path: '/', redirect: '/top' }
+    { path: '/menu', component: MenuView},
+    { path: '/', redirect: '/menu' },
+    
   ]
 })
