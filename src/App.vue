@@ -8,14 +8,18 @@
 
 <style lang="stylus">
 body
-  font-family -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
-  font-size 15px
-  background-color lighten(#eceef1, 30%)
-  color #34495e
+  font-family Arial,Helvetica,sans-serif;
+  background-color #fff
   overflow-y scroll
 
-a
-  color #34495e
-  text-decoration none
+  .clearfix:after
+    content "."
+    display block
+    clear both
+    visibility hidden
+    line-height 0
+    height 0
+
+  
 
 </style>
