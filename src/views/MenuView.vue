@@ -1,7 +1,6 @@
 <template>
   <div class="menu-view">
-    <div>{{ anArray }}</div>
-    <div v-if="!showOrder" class="choose-page">
+    <div v-if="status == 0" class="choose-page">
       <header class="rest-name">
         <h1>{{ restInfo.name }}</h1>
       </header>
@@ -44,35 +43,40 @@
           <div class="food-choosed-total-num">{{ choosedTotalNum }}</div>
         </div>
         <div class="food-choosed-total-price">共 {{ choosedTotalPrice }} 元</div>
-        <div class="complete" @click="showOrder = true">选好了</div>
+        <div class="complete" @click="status = 1">选好了</div>
       </div>
     </div>
-    <order-submit v-else :cart="cart" @backPage="showOrder = false"></order-submit>
+    <order-submit v-else-if="status == 1" :cart="cart" @backPage="status = 0" @forward="onSubmitOrder"></order-submit>
+    <my-order v-else-if="status == 2" :cart="cart" @backPage="status = 1" @remove="onRemove"></order-submit>
   </div>
 </template>
 
 <script>
 import NumInput from '../components/menu/NumInput.vue'
 import OrderSubmit from '../components/menu/OrderSubmit.vue'
+import MyOrder from '../components/menu/MyOrder.vue'
 import { RestApi, MenuApi } from '../api/index.js'
 
-import DB from '../firebase/index'
+import io from 'socket.io-client'
 
 
 export default {
   name: 'menu-view',
   components: {
     NumInput,
-    OrderSubmit
+    OrderSubmit,
+    MyOrder
   },
   created() {
-    RestApi.fetchRestInfo({}, (restinfo) => {
+    RestApi.fetchRestInfo({ id: '1p479g3vqcgwogko4s'}, (restinfo) => {
       this.restInfo = restinfo;
       MenuApi.fetchMenu({}, (menu) => {
         this.menuList = menu
         this.activeTag = this.menuList[0].tagid
       })
-    })
+    });
+
+
     
   },
   props: {
@@ -83,16 +87,10 @@ export default {
       menuList: [],
       cart: [],
       activeTag: '',
-      showOrder: false
+      status: 0
     }
   },
-  firebase: {
-    // simple syntax, bind as an array by default
-    anArray: {
-      source: DB.ref('users/1001'),
-      asObject: true,
-    }
-  },
+
   computed: {
     choosedTotalNum() {
       let num = 0;
@@ -111,6 +109,20 @@ export default {
   },
   filters: {
 
+  },
+  mounted() {
+    this.socket = io()
+    this.socket.on('food-status', (food) => {
+      for(let i=0;i < this.cart.length;i++) {
+        if(this.cart[i].foodid == food.foodid) {
+          // this.cart[i].status = food.status
+          this.$set(this.cart[i], 'status', food.status)
+
+          break;
+        }
+        
+      }
+    });
   },
   methods: {
     onMenuScroll() {
@@ -177,6 +189,25 @@ export default {
           this.cart[k].num--
         }
       }
+    },
+    onSubmitOrder() {
+      this.socket.emit('order', this.cart);
+      this.status = 2
+    },
+    onRemove(item) {
+      let idx;
+      for(let k in this.cart) {
+        let c = this.cart[k]
+        if(c.foodid == item.foodid) {
+          idx = k
+          break;
+        }
+      }
+      if(idx >= 0) {
+        this.cart.splice(idx, 1)
+        this.socket.emit('order-item-remove', item)
+      }
+      
     }
   }
 }

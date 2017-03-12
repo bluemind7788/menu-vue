@@ -2,30 +2,33 @@
   <div class="order-submit">
     <header class="header">
       <div class="back-page" @click="onBackPage">返回</div>
-      <h1>订单提交</h1>
+      <h1>我的订单</h1>
     </header>
 
     <div class="main">
       <div class="order-table">
         <ul>
           <li v-for="item in cart" class="order-item clearfix">
-            <span class="food-name">{{ item.name }}</span>
+            <span class="food-name">
+            	{{ item.name }}
+            	<button class="food-start" :class="{'status-notstarted' : !item.status, 'status-ongoing' : item.status == 1, 'status-finished' : item.status == 2}">{{ !item.status ? '未开始' : item.status == 1 ? '已下厨' : '已完成' }}</button>
+            </span>
           <span class="food-price">¥{{ item.price }}</span>
           <span class="food-num">x{{ item.num }}</span>
+          <button v-if="!item.status" class="food-remove" @click="onRemove(item)">取消</button>
           </li>
         </ul>
       </div>
   </div>
   <div class="footer">
     <span class="total-price">共 ¥{{ totalPrice }}</span>
-    <div class="submit" @click="onSubmit">提交订单</div>
   </div>
   </div>
 </template>
 
 <script>
 export default {
-  name: 'oder-submit',
+  name: 'my-order',
   components: {  },
   props: {
     cart: {
@@ -45,8 +48,8 @@ export default {
     onBackPage() {
       this.$emit('backPage')
     },
-    onSubmit() {
-      this.$emit('forward')
+    onRemove(item) {
+    	this.$emit('remove', item)
     }
   }
 }
@@ -90,6 +93,7 @@ export default {
 	    	padding 0 10px
 	    	border-bottom solid 1px #ddd
 	    	font-size 0
+	    	line-height 50px
 	    	span
 	    		float left
 	    		height 50px
@@ -97,7 +101,7 @@ export default {
 	    		font-size 16px
 	    		padding 0
 	    	.food-name
-	    		width 280px
+	    		width 250px
 	    		white-space nowrap
 	    		overflow hidden
 	    		text-overflow ellipsis
@@ -105,6 +109,27 @@ export default {
 	    		width 25px
 	    	.food-price
 	    		width 50px
+	    	.food-remove
+	    		display inline-block
+	    		width 30px
+	    		height 20px
+	    		vertical-align middle
+	    		border none
+	    		background #ffd300
+	    	.food-start
+	    		display inline-block
+	    		width 40px
+	    		height 20px
+	    		vertical-align middle
+	    		border none
+	    		color #fff
+	    		font-size 12px
+	    		&.status-notstarted
+	    			background #ddd
+	    		&.status-ongoing
+	    			background #ffd300
+	    		&.status-finished
+	    			background #42b983
   .footer
   	position fixed
   	bottom 0

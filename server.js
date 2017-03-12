@@ -5,6 +5,8 @@ const favicon = require('serve-favicon')
 const compression = require('compression')
 const serialize = require('serialize-javascript')
 const resolve = file => path.resolve(__dirname, file)
+let routes = require('./server/routes/index');
+
 
 const isProd = process.env.NODE_ENV === 'production'
 const serverInfo =
@@ -55,14 +57,7 @@ const serve = (path, cache) => express.static(resolve(path), {
   maxAge: cache && isProd ? 60 * 60 * 24 * 30 : 0
 })
 
-app.use(compression({ threshold: 0 }))
-app.use(favicon('./public/logo-48.png'))
-app.use('/service-worker.js', serve('./dist/service-worker.js'))
-app.use('/manifest.json', serve('./manifest.json'))
-app.use('/dist', serve('./dist'))
-app.use('/public', serve('./public'))
-
-app.get('*', (req, res) => {
+const viewRender = (req, res) => {
   if (!renderer) {
     return res.end('waiting for compilation... refresh in a moment.')
   }
@@ -105,9 +100,44 @@ app.get('*', (req, res) => {
     console.error(`error during render : ${req.url}`)
     console.error(err)
   })
-})
+}
+
+app.use(compression({ threshold: 0 }))
+app.use(favicon('./public/logo-48.png'))
+app.use('/service-worker.js', serve('./dist/service-worker.js'))
+app.use('/manifest.json', serve('./manifest.json'))
+app.use('/dist', serve('./dist'))
+app.use('/public', serve('./public'))
+
+app.get('/view/*', viewRender)
+
+routes(app);
 
 const port = process.env.PORT || 8080
-app.listen(port, () => {
+
+const _server = app.listen(port, () => {
   console.log(`server started at localhost:${port}`)
 })
+
+let io = require('socket.io')(_server)
+
+io.on('connection', function (_socket) {
+    console.log(_socket.id + ': connection');
+    _socket.on('order', function (orders) {
+        console.log('Message Received: ', orders);
+        _socket.broadcast.emit('order', orders);
+    });
+    _socket.on('food-status', function (food) {
+        console.log('Message Received: ', food);
+        _socket.broadcast.emit('food-status', food);
+    });
+    _socket.on('order-item-remove', function (item) {
+        console.log('Message Received: ', item);
+        _socket.broadcast.emit('order-item-remove', item);
+    });
+
+    _socket.on('disconnect', function(){
+      console.log('user disconnected');
+    });
+});
+
