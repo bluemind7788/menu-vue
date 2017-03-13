@@ -1,5 +1,5 @@
 let rest = {
-	queryById: 'select * from rest where id=?',
+	queryById: 'select * from rest where restid=?',
 };
 
 module.exports = rest;

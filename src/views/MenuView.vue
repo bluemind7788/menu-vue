@@ -2,7 +2,7 @@
   <div class="menu-view">
     <div v-if="status == 0" class="choose-page">
       <header class="rest-name">
-        <h1>{{ restInfo.name }}</h1>
+        <h1>{{ restInfo.restname }}</h1>
       </header>
       <section class="main">
         <div class="rest-tags">
@@ -68,9 +68,10 @@ export default {
     MyOrder
   },
   created() {
-    RestApi.fetchRestInfo({ id: '1p479g3vqcgwogko4s'}, (restinfo) => {
+    RestApi.fetchRestInfo({ id: '10001'}, (restinfo) => {
       this.restInfo = restinfo;
-      MenuApi.fetchMenu({}, (menu) => {
+      MenuApi.fetchMenu({ id: '10001'}, (menu) => {
+        console.log(menu)
         this.menuList = menu
         this.activeTag = this.menuList[0].tagid
       })
