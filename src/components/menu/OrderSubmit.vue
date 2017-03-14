@@ -125,6 +125,7 @@ export default {
       background #ffd300
       text-align center
       font-size 14px
+      color #fff
 
 
 </style>

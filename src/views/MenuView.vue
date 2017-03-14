@@ -23,7 +23,7 @@
                 <ul class="">
                   <li v-for="food in item.foods" class="food-item clearfix">
                     <div class="img-wraper">
-                      <img :src="food.image">
+                      <img :src="food.image | addImgPre">
                     </div>
                     <div class="info">
                       <div class="name">{{ food.name }}</div>
@@ -43,11 +43,11 @@
           <div class="food-choosed-total-num">{{ choosedTotalNum }}</div>
         </div>
         <div class="food-choosed-total-price">共 {{ choosedTotalPrice }} 元</div>
-        <div class="complete" @click="status = 1">选好了</div>
+        <div class="complete" @click="onComplete" :style="{'background' : completeEnabled ? '#ffd300' : '#efefef'}">选好了</div>
       </div>
     </div>
     <order-submit v-else-if="status == 1" :cart="cart" @backPage="status = 0" @forward="onSubmitOrder"></order-submit>
-    <my-order v-else-if="status == 2" :cart="cart" @backPage="status = 1" @remove="onRemove"></order-submit>
+    <my-order v-else-if="status == 2" :cart="order" @backPage="status = 1" @remove="onRemove"></order-submit>
   </div>
 </template>
 
@@ -68,13 +68,32 @@ export default {
     MyOrder
   },
   created() {
-    RestApi.fetchRestInfo({ id: '10001'}, (restinfo) => {
+    let sps = this.$route.path.split('/')
+    this.restId = sps[sps.length-2]
+    this.deskId = sps[sps.length-1]
+    RestApi.fetchRestInfo({ id: this.restId}, (restinfo) => {
       this.restInfo = restinfo;
-      MenuApi.fetchMenu({ id: '10001'}, (menu) => {
+      MenuApi.fetchMenu({ id: this.restId}, (menu) => {
         console.log(menu)
         this.menuList = menu
         this.activeTag = this.menuList[0].tagid
+
+        // 恢复localStorage
+        this.lsCartKey = 'cart-' + this.restId + '-' + this.deskId;
+        this.lsStatusKey = 'status-' + this.restId + '-' + this.deskId;
+        let storedCart = localStorage.getItem(this.lsCartKey)
+        let storedStatus = localStorage.getItem(this.lsStatusKey)
+        if(storedCart) {
+          this.cart = JSON.parse(storedCart)
+        }
+
+        if(storedStatus !== undefined && storedStatus !== null ) {
+          this.status = storedStatus
+        }
+
       })
+
+
     });
 
 
@@ -87,8 +106,9 @@ export default {
       restInfo: {},
       menuList: [],
       cart: [],
+      order: [],
       activeTag: '',
-      status: 0
+      status: 0,
     }
   },
 
@@ -106,10 +126,15 @@ export default {
         total += item.price*item.num;
       })
       return total
+    },
+    completeEnabled() {
+      return this.cart.length > 0
     }
   },
   filters: {
-
+    addImgPre(value) {
+      return '/public/imgs/' + value + '.png'
+    }
   },
   mounted() {
     this.socket = io()
@@ -125,6 +150,13 @@ export default {
       }
     });
   },
+
+  watch: {
+    status(newValue) {
+      localStorage.setItem(this.lsStatusKey, newValue)
+    }
+  },
+
   methods: {
     onMenuScroll() {
       let menus = this.$refs.foodMenu.querySelectorAll('.menu-item')
@@ -173,6 +205,7 @@ export default {
           num: 1
         })
       }
+      localStorage.setItem(this.lsCartKey, JSON.stringify(this.cart))
     },
     onMinusFood(food) {
       let has = false, k;
@@ -190,9 +223,14 @@ export default {
           this.cart[k].num--
         }
       }
+      localStorage.setItem(this.lsCartKey, JSON.stringify(this.cart))
     },
     onSubmitOrder() {
-      this.socket.emit('order', this.cart);
+      this.order = JSON.parse(JSON.stringify(this.cart))
+      this.cart.splice(0, this.cart.length)
+      localStorage.setItem(this.lsCartKey, '')
+
+      this.socket.emit('order', this.order);
       this.status = 2
     },
     onRemove(item) {
@@ -207,6 +245,12 @@ export default {
       if(idx >= 0) {
         this.cart.splice(idx, 1)
         this.socket.emit('order-item-remove', item)
+      }
+      
+    },
+    onComplete() {
+      if(this.completeEnabled) {
+        this.status = 1;   
       }
       
     }
@@ -249,6 +293,9 @@ export default {
           border-bottom 1px dotted #bfbfbf
           line-height 60px
           text-align center
+          overflow: hidden;
+          white-space: nowrap;
+          text-overflow: ellipsis;
           &.active
             background #fff
             &:before
@@ -346,9 +393,10 @@ export default {
         width 110px
         height 100%
         line-height 50px
-        background #ffd300
+        
         text-align center
         font-size 14px
+        color #fff
 
 
 

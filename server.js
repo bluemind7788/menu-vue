@@ -5,8 +5,8 @@ const favicon = require('serve-favicon')
 const compression = require('compression')
 const serialize = require('serialize-javascript')
 const resolve = file => path.resolve(__dirname, file)
-let routes = require('./server/routes/index');
-
+const routes = require('./server/routes/index');
+const socketio = require('./server/socketio/index')
 
 const isProd = process.env.NODE_ENV === 'production'
 const serverInfo =
@@ -102,6 +102,7 @@ const viewRender = (req, res) => {
   })
 }
 
+
 app.use(compression({ threshold: 0 }))
 app.use(favicon('./public/logo-48.png'))
 app.use('/service-worker.js', serve('./dist/service-worker.js'))
@@ -119,25 +120,4 @@ const _server = app.listen(port, () => {
   console.log(`server started at localhost:${port}`)
 })
 
-let io = require('socket.io')(_server)
-
-io.on('connection', function (_socket) {
-    console.log(_socket.id + ': connection');
-    _socket.on('order', function (orders) {
-        console.log('Message Received: ', orders);
-        _socket.broadcast.emit('order', orders);
-    });
-    _socket.on('food-status', function (food) {
-        console.log('Message Received: ', food);
-        _socket.broadcast.emit('food-status', food);
-    });
-    _socket.on('order-item-remove', function (item) {
-        console.log('Message Received: ', item);
-        _socket.broadcast.emit('order-item-remove', item);
-    });
-
-    _socket.on('disconnect', function(){
-      console.log('user disconnected');
-    });
-});
-
+socketio(_server)

@@ -115,7 +115,7 @@ export default {
 	    		height 20px
 	    		vertical-align middle
 	    		border none
-	    		background #ffd300
+	    		background #fff
 	    	.food-start
 	    		display inline-block
 	    		width 40px
