@@ -10,7 +10,7 @@ module.exports = {
             	console.log(result)
             	let rsl = [],
             		tagIndex = {};
-
+            	// 转换数据格式
             	result.forEach((r) => {
             		if(typeof tagIndex[r.tagid] == 'undefined') {
             			rsl.push({
