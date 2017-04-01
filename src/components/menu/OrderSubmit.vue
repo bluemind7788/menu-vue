@@ -9,7 +9,7 @@
       <div class="order-table">
         <ul>
           <li v-for="item in cart" class="order-item clearfix">
-            <span class="food-name">{{ item.name }}</span>
+            <span class="food-name">{{ item.foodname }}</span>
           <span class="food-price">¥{{ item.price }}</span>
           <span class="food-num">x{{ item.num }}</span>
           </li>

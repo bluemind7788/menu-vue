@@ -17,8 +17,8 @@ module.exports = {
 	            			tagid: r.tagid,
 	            			tagname: r.tagname,
 	            			foods: [{
-	            				id: r.foodid,
-	            				name: r.foodname,
+	            				foodid: r.foodid,
+	            				foodname: r.foodname,
 	            				price: r.price,
 	            				image: r.image,
 	            			}]
@@ -27,8 +27,8 @@ module.exports = {
 
             		} else {
             			rsl[tagIndex[r.tagid]].foods.push({
-            				id: r.foodid,
-            				name: r.foodname,
+            				foodid: r.foodid,
+            				foodname: r.foodname,
             				price: r.price,
             				image: r.image
             			})

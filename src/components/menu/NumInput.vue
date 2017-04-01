@@ -29,7 +29,7 @@ export default {
     foodNum() {
 		for(let k in this.cart) {
 			let c = this.cart[k]
-			if(c.foodid == this.food.id) {
+			if(c.foodid == this.food.foodid) {
 			  return c.num
 			}
 		}

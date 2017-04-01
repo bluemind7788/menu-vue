@@ -26,7 +26,7 @@
                       <img :src="food.image | addImgPre">
                     </div>
                     <div class="info">
-                      <div class="name">{{ food.name }}</div>
+                      <div class="name">{{ food.foodname }}</div>
                       <div class="price">¥{{ food.price }}</div>
                     </div>
                     <num-input :cart="cart" :food="food" @addFood="onAddFood" @minusFood="onMinusFood" class="action"></num-input>
@@ -47,7 +47,7 @@
       </div>
     </div>
     <order-submit v-else-if="status == 1" :cart="cart" @backPage="status = 0" @forward="onSubmitOrder"></order-submit>
-    <my-order v-else-if="status == 2" :cart="order" @backPage="status = 1" @remove="onRemove"></order-submit>
+    <my-order v-else-if="status == 2" :cart="order" @backPage="status = 1" @remove="onRemove" @addOrderFood="onAddOrderFood"></order-submit>
   </div>
 </template>
 
@@ -55,10 +55,12 @@
 import NumInput from '../components/menu/NumInput.vue'
 import OrderSubmit from '../components/menu/OrderSubmit.vue'
 import MyOrder from '../components/menu/MyOrder.vue'
-import { RestApi, MenuApi } from '../api/index.js'
+import { RestApi, MenuApi, OrderApi, SaleApi } from '../api/index.js'
 
 import io from 'socket.io-client'
 
+import Util from '../util/index'
+import Cookie from '../util/Cookie'
 
 export default {
   name: 'menu-view',
@@ -68,15 +70,26 @@ export default {
     MyOrder
   },
   created() {
+
+    
     let sps = this.$route.path.split('/')
-    this.restId = sps[sps.length-2]
-    this.deskId = sps[sps.length-1]
+    this.restId = parseInt(sps[sps.length-2], 36)
+    this.deskId = parseInt(sps[sps.length-1], 36)
     RestApi.fetchRestInfo({ id: this.restId}, (restinfo) => {
       this.restInfo = restinfo;
       MenuApi.fetchMenu({ id: this.restId}, (menu) => {
         console.log(menu)
         this.menuList = menu
         this.activeTag = this.menuList[0].tagid
+
+        // 生成用户id
+        this.uuid = localStorage.getItem('zm_uuid');
+        if(!this.uuid) {
+          this.uuid = Util.genNonDuplicateID()
+          localStorage.setItem('zm_uuid', this.uuid)
+        }
+        Cookie.set('customer_uuid', this.uuid)
+
 
         // 恢复localStorage
         this.lsCartKey = 'cart-' + this.restId + '-' + this.deskId;
@@ -90,6 +103,24 @@ export default {
         if(storedStatus !== undefined && storedStatus !== null ) {
           this.status = storedStatus
         }
+
+        if(this.status == 2) {
+          // 恢复订单
+          OrderApi.getOrderByCustId({
+            customerid: this.uuid,
+            deskid: this.deskId,
+            status: 0
+          }, (unFinishs) => {
+            console.log(unFinishs)
+            if(unFinishs.length > 0) {
+              this.orderId = unFinishs[0].zorderid;
+              this.order = unFinishs
+            }
+            
+          })
+        }
+
+
 
       })
 
@@ -107,6 +138,7 @@ export default {
       menuList: [],
       cart: [],
       order: [],
+      orderId: '',
       activeTag: '',
       status: 0,
     }
@@ -137,12 +169,20 @@ export default {
     }
   },
   mounted() {
-    this.socket = io()
-    this.socket.on('food-status', (food) => {
-      for(let i=0;i < this.cart.length;i++) {
-        if(this.cart[i].foodid == food.foodid) {
-          // this.cart[i].status = food.status
-          this.$set(this.cart[i], 'status', food.status)
+    this.socket = io();
+
+    // 加入房间
+    this.socket.on('connect', () => {
+      // this.socket.emit('join-room', {});
+    });
+
+
+    this.socket.on('food-status', (sale) => {
+      console.log(sale)
+      for(let i=0;i < this.order.length;i++) {
+        if(this.order[i].saleid == sale.saleid) {
+          // this.cart[i].status = food.foodstatus
+          this.$set(this.order[i], 'salestatus', sale.salestatus)
 
           break;
         }
@@ -190,7 +230,7 @@ export default {
     onAddFood(food) {
       let has = false, k;
       for(k in this.cart) {
-        if(this.cart[k].foodid == food.id) {
+        if(this.cart[k].foodid == food.foodid) {
           has = true;
           break;
         }
@@ -199,8 +239,8 @@ export default {
         this.cart[k].num++
       } else {
         this.cart.push({
-          foodid: food.id,
-          name: food.name,
+          foodid: food.foodid,
+          foodname: food.foodname,
           price: food.price,
           num: 1
         })
@@ -210,7 +250,7 @@ export default {
     onMinusFood(food) {
       let has = false, k;
       for(k in this.cart) {
-        if(this.cart[k].foodid == food.id) {
+        if(this.cart[k].foodid == food.foodid) {
           has = true;
           break;
         }
@@ -226,31 +266,79 @@ export default {
       localStorage.setItem(this.lsCartKey, JSON.stringify(this.cart))
     },
     onSubmitOrder() {
-      this.order = JSON.parse(JSON.stringify(this.cart))
-      this.cart.splice(0, this.cart.length)
-      localStorage.setItem(this.lsCartKey, '')
+      let afterSave = (res) => {
+        console.log(res)
+        let newOrderId = res.orderId;
+        this.orderId = newOrderId;
+        // 通知厨师更新
+        let orderInfo = {
+          orderid: newOrderId,
+          restid: this.restId,
+          deskid: this.deskId,
+          customerid: this.uuid,
+        }
+        this.socket.emit('new-order', orderInfo);
+        this.status = 2
 
-      this.socket.emit('order', this.order);
-      this.status = 2
+        OrderApi.queryOrderById({
+          orderid: newOrderId
+        }, (data) => {
+             console.log(data)
+            this.order = data;
+            // 清空购物车
+            this.cart.splice(0, this.cart.length)
+            localStorage.setItem(this.lsCartKey, '')
+
+        });
+      }
+      if(this.orderId) {
+        // 加菜状态
+        OrderApi.saveOrder({
+          orderid: this.orderId,
+          foodlist: encodeURIComponent(JSON.stringify(this.cart)),
+          type: 'addOrderFood'
+        }, afterSave);
+        
+      } else {
+        OrderApi.saveOrder({
+          restid: this.restId,
+          deskid: this.deskId,
+          customerid: this.uuid,
+          saletime: Util.formatDate(new Date(), 'yyyy-MM-dd hh:mm:ss'),
+          totalprice: this.choosedTotalPrice,
+          foodlist: encodeURIComponent(JSON.stringify(this.cart))
+        }, afterSave);
+      }
+      
+      
     },
     onRemove(item) {
       let idx;
-      for(let k in this.cart) {
-        let c = this.cart[k]
+      for(let k in this.order) {
+        let c = this.order[k]
         if(c.foodid == item.foodid) {
           idx = k
           break;
         }
       }
       if(idx >= 0) {
-        this.cart.splice(idx, 1)
-        this.socket.emit('order-item-remove', item)
+        SaleApi.deleteSale({
+          saleid: item.saleid
+        }, () => {
+          this.order.splice(idx, 1)
+          this.socket.emit('order-item-remove', item)
+        });
+        
       }
+      
+    },
+    onAddOrderFood() {
+      this.status = 0;
       
     },
     onComplete() {
       if(this.completeEnabled) {
-        this.status = 1;   
+        this.status++;   
       }
       
     }

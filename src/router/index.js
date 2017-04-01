@@ -12,7 +12,7 @@ export default new Router({
   routes: [
   	{ path: '/', component: MenuView},
     { path: '/view/menu/:id/:id', component: MenuView},
-    { path: '/view/cooker', component: Cooker},
+    { path: '/view/cooker/:id', component: Cooker},
 
     
   ]

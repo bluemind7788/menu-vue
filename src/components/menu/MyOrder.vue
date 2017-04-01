@@ -1,7 +1,8 @@
 <template>
   <div class="order-submit">
     <header class="header">
-      <div class="back-page" @click="onBackPage">返回</div>
+      <!-- <div class="back-page" @click="onBackPage">返回</div> -->
+      <div class="add-food" @click="onAddFood">加菜</div>
       <h1>我的订单</h1>
     </header>
 
@@ -10,12 +11,12 @@
         <ul>
           <li v-for="item in cart" class="order-item clearfix">
             <span class="food-name">
-            	{{ item.name }}
-            	<button class="food-start" :class="{'status-notstarted' : !item.status, 'status-ongoing' : item.status == 1, 'status-finished' : item.status == 2}">{{ !item.status ? '未开始' : item.status == 1 ? '已下厨' : '已完成' }}</button>
+            	{{ item.foodname }}
+            	<button class="food-start" :class="{'status-notstarted' : !item.status, 'status-ongoing' : item.status == 1, 'status-finished' : item.salestatus == 2}">{{ !item.salestatus ? '未开始' : item.salestatus == 1 ? '已下厨' : '已完成' }}</button>
             </span>
           <span class="food-price">¥{{ item.price }}</span>
           <span class="food-num">x{{ item.num }}</span>
-          <button v-if="!item.status" class="food-remove" @click="onRemove(item)">取消</button>
+          <button v-if="!item.salestatus" class="food-remove" @click="onRemove(item)">取消</button>
           </li>
         </ul>
       </div>
@@ -48,6 +49,9 @@ export default {
     onBackPage() {
       this.$emit('backPage')
     },
+    onAddFood() {
+      this.$emit('addOrderFood')
+    },
     onRemove(item) {
     	this.$emit('remove', item)
     }
@@ -74,6 +78,12 @@ export default {
     .back-page
       position absolute
       left: 10px
+      width 50px
+      line-height 42px
+      font-size 19px /*px*/
+    .add-food
+      position absolute
+      right: 10px
       width 50px
       line-height 42px
       font-size 19px /*px*/
