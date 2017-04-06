@@ -38,9 +38,20 @@
         </div>
       </section>
       <div class="cart">
-        <div class="cart-img-wrap">
+        <div class="cart-img-wrap" @click="showBottomCart = !showBottomCart">
           <img src="../assets/images/cart.png">
           <div class="food-choosed-total-num">{{ choosedTotalNum }}</div>
+        </div>
+        <div class="bottom-cart-table" :style="{display: cart.length > 0 && showBottomCart ? 'block' : 'none'}">
+          <div class="mask" @click="showBottomCart = false"></div>
+          <ul class="bottom-cart-table-wrap">
+            <div class="clear-cart"><span class="clear-cart-btn" @click="onClearCart">清空购物车</span></div>
+            <li v-for="item in cart" class="cart-item clearfix">
+              <span class="food-name">{{ item.foodname }}</span>
+              <num-input :cart="cart" :food="item" @addFood="onAddFood" @minusFood="onMinusFood" class="action"></num-input>
+              <span class="food-price">¥{{ item.price }}</span>
+            </li>
+          </ul>
         </div>
         <div class="food-choosed-total-price">共 {{ choosedTotalPrice }} 元</div>
         <div class="complete" @click="onComplete" :style="{'background' : completeEnabled ? '#ffd300' : '#efefef'}">选好了</div>
@@ -62,27 +73,26 @@ import io from 'socket.io-client'
 // import Util from '../util/index.js'
 // import Cookie from '../util/Cookie'
 
-Util = {
-    formatDate(date, fmt) {
-        var o = {
-            "M+": date.getMonth() + 1, //月份 
-            "d+": date.getDate(), //日 
-            "h+": date.getHours(), //小时 
-            "m+": date.getMinutes(), //分 
-            "s+": date.getSeconds(), //秒 
-            "q+": Math.floor((date.getMonth() + 3) / 3), //季度 
-            "S": date.getMilliseconds() //毫秒 
-        };
-        if (/(y+)/.test(fmt)) fmt = fmt.replace(RegExp.$1, (date.getFullYear() + "").substr(4 - RegExp.$1.length));
-        for (var k in o)
-            if (new RegExp("(" + k + ")").test(fmt)) fmt = fmt.replace(RegExp.$1, (RegExp.$1.length == 1) ? (o[k]) : (("00" + o[k]).substr(("" + o[k]).length)));
-        return fmt;
-    },
-    genNonDuplicateID(randomLength){
-      return Number(Math.random().toString().substr(3,randomLength) + Date.now()).toString(36)
-    }
 
+function formatDate (date, fmt) {
+    var o = {
+        "M+": date.getMonth() + 1, //月份 
+        "d+": date.getDate(), //日 
+        "h+": date.getHours(), //小时 
+        "m+": date.getMinutes(), //分 
+        "s+": date.getSeconds(), //秒 
+        "q+": Math.floor((date.getMonth() + 3) / 3), //季度 
+        "S": date.getMilliseconds() //毫秒 
+    };
+    if (/(y+)/.test(fmt)) fmt = fmt.replace(RegExp.$1, (date.getFullYear() + "").substr(4 - RegExp.$1.length));
+    for (var k in o)
+        if (new RegExp("(" + k + ")").test(fmt)) fmt = fmt.replace(RegExp.$1, (RegExp.$1.length == 1) ? (o[k]) : (("00" + o[k]).substr(("" + o[k]).length)));
+    return fmt;
 }
+function genNonDuplicateID(randomLength){
+  return Number(Math.random().toString().substr(3,randomLength) + Date.now()).toString(36)
+}
+
 
 
 export default {
@@ -108,7 +118,7 @@ export default {
         // 生成用户id
         this.uuid = localStorage.getItem('zm_uuid');
         if(!this.uuid) {
-          this.uuid = Util.genNonDuplicateID()
+          this.uuid = genNonDuplicateID()
           localStorage.setItem('zm_uuid', this.uuid)
         }
         // Cookie.set('customer_uuid', this.uuid)
@@ -164,6 +174,7 @@ export default {
       orderId: '',
       activeTag: '',
       status: 0,
+      showBottomCart: false
     }
   },
 
@@ -288,6 +299,9 @@ export default {
       }
       localStorage.setItem(this.lsCartKey, JSON.stringify(this.cart))
     },
+    onClearCart() {
+
+    },
     onSubmitOrder() {
       let afterSave = (res) => {
         console.log(res)
@@ -327,7 +341,7 @@ export default {
           restid: this.restId,
           deskid: this.deskId,
           customerid: this.uuid,
-          saletime: Util.formatDate(new Date(), 'yyyy-MM-dd hh:mm:ss'),
+          saletime: formatDate(new Date(), 'yyyy-MM-dd hh:mm:ss'),
           totalprice: this.choosedTotalPrice,
           foodlist: encodeURIComponent(JSON.stringify(this.cart))
         }, afterSave);
@@ -475,6 +489,7 @@ export default {
         top -16px
         width 50px
         height 50px
+        z-index 99
         img
           width 100%
           height 100%
@@ -490,6 +505,47 @@ export default {
           font-size 12px
           text-align center
           color #fff
+      .bottom-cart-table
+        position fixed
+        top 0
+        bottom 50px
+        left 0
+        width 100%
+        .mask
+          position absolute
+          width 100%
+          height 100%
+          background rgba(0, 0, 0, 0.5)
+        .bottom-cart-table-wrap
+          position absolute
+          bottom 0
+          width 100%
+          background #fff
+          z-index 99
+          
+          .clear-cart
+            height 32px;
+            .clear-cart-btn
+              float: right
+              margin-right 20px
+              display block
+              height 100%
+              line-height 32px
+          .cart-item
+            padding 0 20px
+            line-height 50px
+            border-bottom solid 1px #bfbfbf /*no*/
+            background #efefef
+            font-size 16px
+            .food-price
+              float right
+              margin-right 10px
+              color #fb4e44
+            .num-input
+              float right
+              margin-top 10px
+              .food-num
+                margin-top 6px
       .food-choosed-total-price
         margin-left 70px
         margin-right 110px

@@ -18,8 +18,16 @@
   </div>
   <div class="footer">
     <span class="total-price">共 ¥{{ totalPrice }}</span>
-    <div class="submit" @click="onSubmit">提交订单</div>
+    <div class="submit" :class="{ sending: sending }" @click="onSubmit">{{ sending ? ' 提交中...' : '提交订单' }}</div>
   </div>
+  <div class="loading">
+    <span></span>
+    <span></span>
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+
   </div>
 </template>
 
@@ -30,6 +38,11 @@ export default {
   props: {
     cart: {
       type: Array
+    }
+  },
+  data() {
+    return {
+      sending: false
     }
   },
   computed: {
@@ -126,6 +139,12 @@ export default {
       text-align center
       font-size 14px
       color #fff
+      &.sending
+        background lighten(#ffd300, 50%)
+    
 
+  
+
+        
 
 </style>

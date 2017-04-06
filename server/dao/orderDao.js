@@ -71,7 +71,7 @@ module.exports = {
     queryByRestIdAndStatus: function(req, res, next) {
         var params = req.query || req.params
         BaseDao.pool.getConnection(function(err, connection) {
-            connection.query($sql.queryByRestIdAndStatus, [params.restid, params.status], function(err, result) {
+            connection.query($sql.queryByRestIdAndStatus, [params.restid], function(err, result) {
                 console.log(result)
                 BaseDao.jsonWrite(res, result);
                 connection.release();

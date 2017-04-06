@@ -17,7 +17,7 @@ function parseCookie(req) {
 function parseRestId(req) {
     var url = req.headers.referer;
     
-    var splited = url.split('/');
+    var splited = url.split('?')[0].split('/');
     if(splited[splited.length - 2] == 'cooker') {
         return splited[splited.length - 1]
     }
