@@ -47,7 +47,7 @@ module.exports = (_server) => {
         })
 
         _socket.on('new-order', function (orderInfo) {
-            console.log('Message Received: ', orderInfo);
+            // console.log('Message Received: ', orderInfo);
             
             // _socket.broadcast.emit('order', orders);
             
@@ -55,13 +55,13 @@ module.exports = (_server) => {
         });
 
         _socket.on('food-status', function (sale) {
-            console.log('Message Received: ', sale);
+            // console.log('Message Received: ', sale);
             // _socket.broadcast.emit('food-status', sale);
             io.to(roomID).emit('food-status', sale);
         });
 
         _socket.on('order-item-remove', function (item) {
-            console.log('Message Received: ', item);
+            // console.log('Message Received: ', item);
             // _socket.broadcast.emit('order-item-remove', item);
             io.to(roomID).emit('order-item-remove', item);
         });

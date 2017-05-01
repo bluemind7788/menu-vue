@@ -1,6 +1,7 @@
 var BaseDao = require('./baseDao');
 var $sql = require('./orderSqlMapping');
 var $saleSql = require('./saleSqlMapping');
+var Util = require('../util/util');
 
 
 module.exports = {
@@ -20,29 +21,57 @@ module.exports = {
             });
         } else {
             BaseDao.pool.getConnection(function(err, connection) {
-                connection.query($sql.insert, [params.restid, params.deskid, params.customerid, params.saletime, params.totalprice, 0], function(err, result) {
-                    if(result.insertId >= 0) {
-         //             var sqlParamsEntity = [];
-         //             foodList.forEach((food) => {
-                  //        sqlParamsEntity.push(BaseDao.getNewSqlParamEntity($saleSql.insert, [result.insertId, food.foodid, food.price, food.num, 0]));
-                  //       })
-
-                        // BaseDao.execTrans(sqlParamsEntity, function(err, info){
-                        //  if(err){
-                        //     console.error("事务执行失败");
-                        //  }else{
-                        //     BaseDao.jsonWrite(res, {orderId: result.insertId});
-                        //  }
-         //                    connection.release();
-                        // })
-                        execInsertSales(result.insertId, foodList, () => {
-                            connection.release();
-                        });
-                    } else {
-                        connection.release();
-                    }
+                let d = new Date(),
+                    tomorrow = new Date();
                     
+                let fd = Util.formatDate(d, 'yyyy-MM-dd');
+                tomorrow.setTime(tomorrow.getTime() + 3600 * 1000 * 24 * 1);
+                let tod = Util.formatDate(tomorrow, 'yyyy-MM-dd');
+
+                connection.query($sql.queryMaxOrderNo, [params.restid, fd + ' 00:00:00', tod + ' 00:00:00'], function(err, result) {
+                    let max = result[0][Object.keys(result[0])[0]];
+                    let zorderno = null
+                    if(max) {
+                        let number = parseInt(max.substr(13))+1;
+                        let zeroNum = 5 - (number+'').length;
+                        let prefixZero = ''
+                        for(let i=0;i<zeroNum;i++) {
+                            prefixZero += '0';
+                        }
+                        zorderno = max.substring(0, 13) + prefixZero + number;
+                    } else {
+                        zorderno = Util.formatDate(d, 'yyyyMMdd') + params.restid + '00001'
+                    }
+
+                    connection.query($sql.insert, [params.restid, params.deskid, params.customerid, params.saletime, params.totalprice, 0, zorderno], function(err, result) {
+                        if(result.insertId >= 0) {
+             //             var sqlParamsEntity = [];
+             //             foodList.forEach((food) => {
+                      //        sqlParamsEntity.push(BaseDao.getNewSqlParamEntity($saleSql.insert, [result.insertId, food.foodid, food.price, food.num, 0]));
+                      //       })
+
+                            // BaseDao.execTrans(sqlParamsEntity, function(err, info){
+                            //  if(err){
+                            //     console.error("事务执行失败");
+                            //  }else{
+                            //     BaseDao.jsonWrite(res, {orderId: result.insertId});
+                            //  }
+             //                    connection.release();
+                            // })
+                            execInsertSales(result.insertId, foodList, () => {
+                                connection.release();
+                            });
+                        } else {
+                            connection.release();
+                        }
+                        
+                    });
+
                 });
+                
+
+                // let zorderno = Util.formatDate(new Date(), 'yyyy-MM-dd') + params.restid + ;
+         
             });
         }
 

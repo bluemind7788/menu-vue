@@ -1,8 +1,10 @@
 let order = {
-	insert: 'INSERT INTO zorder(restid, deskid, customerid, zordersaletime, totalprice, zorderstatus) VALUES (?, ?, ?, ?, ?, ?);',
+	insert: 'INSERT INTO zorder(restid, deskid, customerid, zordersaletime, totalprice, zorderstatus, zorderno) VALUES (?, ?, ?, ?, ?, ?, ?);',
 	queryByCustomerid: 'select f.foodid, f.foodname, s.saleid, s.num, s.price, s.salestatus, z.zorderid from food f INNER JOIN sale s ON s.foodid = f.foodid INNER JOIN zorder z ON z.zorderid = s.zorderid AND customerid = ? and deskid = ? and zorderstatus = ?',
 	queryById: 'select f.foodid, f.foodname, s.saleid, s.num, s.price, s.salestatus from food f INNER JOIN sale s ON s.foodid = f.foodid INNER JOIN zorder z ON z.zorderid = s.zorderid AND z.zorderid = ?',
 	queryByRestIdAndStatus: 'select d.desknum, f.foodid, f.foodname, s.saleid, s.num, s.price, s.salestatus from food f INNER JOIN sale s ON s.foodid = f.foodid AND s.salestatus IN(0,1) INNER JOIN zorder z ON z.zorderid = s.zorderid AND z.restid = ? INNER JOIN desk d ON d.deskid = z.deskid',
+	queryMaxOrderNo: 'select max(zorderno) from zorder where restid = ? and zordersaletime > ? and zordersaletime < ?',
+
 
 };
 
