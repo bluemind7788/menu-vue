@@ -199,7 +199,7 @@ export default {
   },
   filters: {
     addImgPre(value) {
-      return '/public/imgs/' + value + '.png'
+      return 'http://www.zhuoma.tech/public/imgs/' + value + '.jpg'
     }
   },
   mounted() {
